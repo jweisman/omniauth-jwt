@@ -25,7 +25,19 @@ module OmniAuth
       
       def decoded
         begin
-          @decoded ||= ::JWT.decode(request.params['jwt'], options.secret, options.algorithm).first
+          secret =
+          case options.algorithm
+          when *%w[RS256 RS384 RS512]
+            OpenSSL::PKey::RSA.new(options.secret).public_key
+          when *%w[ES256 ES384 ES512]
+            OpenSSL::PKey::EC.new(options.secret).tap { |key| key.private_key = nil }
+          when *%w(HS256 HS384 HS512)
+            options.secret
+          else
+            raise NotImplementedError, "Unsupported algorithm: #{options.algorithm}"
+          end
+
+          @decoded ||= ::JWT.decode(request.params['jwt'], secret, true, { algorithm: options.algorithm }).first
         rescue Exception => e
           raise BadJwt.new(e.message)
         end
