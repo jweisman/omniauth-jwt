@@ -18,6 +18,7 @@ module OmniAuth
       option :info_map, {"name" => "name", "email" => "email"}
       option :auth_url, nil
       option :valid_within, nil
+      option :verify, true
       
       def request_phase
         redirect options.auth_url
@@ -37,7 +38,7 @@ module OmniAuth
             raise NotImplementedError, "Unsupported algorithm: #{options.algorithm}"
           end
 
-          @decoded ||= ::JWT.decode(request.params['jwt'], secret, true, { algorithm: options.algorithm }).first
+          @decoded ||= ::JWT.decode(request.params['jwt'], secret, options.verify, { algorithm: options.algorithm }).first
         rescue Exception => e
           raise BadJwt.new(e.message)
         end
